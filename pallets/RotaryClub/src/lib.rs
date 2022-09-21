@@ -38,11 +38,24 @@ pub mod pallet {
 	// The pallet's runtime storage items.
 	
 	#[pallet::storage]
-	#[pallet::getter(fn get_Initialmembers)]
+	#[pallet::getter(fn get_initial_members)]
 
-	pub type Initialmembers<T: Config> = StorageValue<_, BoundedVec<RotaryClubMembers<T>, T::MAXIMUM>, ValueQuery>;
+	pub type InitialMembers<T: Config> = StorageValue<_, BoundedVec<RotaryClubMembers<T>, T::MAXIMUM>, ValueQuery>;
 
+	#[pallet::storage]
+	#[pallet::getter(fn get_awaiting_origin_approval)]
 
+	pub type AwaitingOriginApproval<T: Config> = StorageValue<_, BoundedVec<T::AccountId>, T::MAXIMUM>, ValueQuery>;
+	
+	#[derive(Encode, Decode, PartialEq, MaxEncodedLen, TypeInfo)]
+	#[scale_info(skip_type_params(T))]
+	#[codec(mel_bound())]
+	
+	pub struct RotaryClubMembers<T: Config> {
+		member_details: T::AccountId,
+
+		block_details: T::BlockNumber
+	}
 	// Pallets use events to inform users when important changes are made.
 
 	#[pallet::event]
