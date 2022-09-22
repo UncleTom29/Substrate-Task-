@@ -72,10 +72,19 @@ pub mod pallet {
 	// Errors inform users that something went wrong.
 	#[pallet::error]
 	pub enum Error<T> {
-		/// Error names should be descriptive.
-		NoneValue,
-		/// Errors should have helpful documentation associated with them.
-		StorageOverflow,
+		// The applicant already included in the awaiting list
+		AlreadyOnAwaitingList,
+		// Not on Awaiting List
+		NotOnAwaitingList,
+		// AwaitingListAlreadyFull
+		AwaitingListFull,
+		// The member already exist 
+		RotaryClubMemberAlready, 
+		//Too many members
+		RotaryClubFull,
+		// Not a Member of Rotary Club
+		NotMember,
+
 	}
 
 	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
