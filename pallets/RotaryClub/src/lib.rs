@@ -124,7 +124,7 @@ pub mod pallet {
 
 		#[pallet::weight(10_000)]
 		pub fn remove_from_awaitinglist(origin: OriginFor<T>, applicant: T::AccountId) -> DispatchResult {
-		ensure_root(origin)?;
+			let applicant = ensure_signed(origin)?;
 		let mut awaiting_list_members = <AwaitingOriginApproval<T>>::get();
 
 		<AwaitingOriginApproval<T>>::try_mutate(|awaiting_list| {
