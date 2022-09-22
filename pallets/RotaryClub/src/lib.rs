@@ -19,7 +19,7 @@ pub mod pallet {
 	use frame_support::{
 		dispatch::{DispatchResult, PartialEq},
 		pallet_prelude::*,
-	
+	}
 	use frame_system::pallet_prelude::*;
 	use scale_info::TypeInfo;
 
@@ -83,7 +83,7 @@ pub mod pallet {
 		//Too many members
 		RotaryClubFull,
 		// Not a Member of Rotary Club
-		NotMember,
+		NotRotaryClubMember,
 
 	}
 
@@ -93,7 +93,7 @@ pub mod pallet {
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
 
-		#[pallet::weight(10_000 + T::DbWeight::get().writes(1))]
+		#[pallet::weight(10_000)]
 		pub fn add_to_awaitinglist(origin: OriginFor<T>) -> DispatchResult {
 			// Check that the extrinsic was signed and get the signer.
 			// This function will return an error if the extrinsic is not signed.
@@ -109,10 +109,10 @@ pub mod pallet {
 				<Error<T>>::RotaryClubMemberAlready
 			);
 
-			<AwaitingOriginApproval<T>>::try_mutate(|b_vec| b_vec.try_push(applicant.clone()))
+			<AwaitingOriginApproval<T>>::try_mutate(|awaiting_list| awaiting_list.try_push(applicant.clone()))
 				.map_err(|_| <Error<T>>::AwaitingListFull)?;
 
-			<InitialMembers<T>>::try_mutate(|b_vec| b_vec.try_push(applicant.clone()))
+			<InitialMembers<T>>::try_mutate(|awaiting_list| awaiting_list.try_push(applicant.clone()))
 				.map_err(|_| <Error<T>>::RotaryClubFull)?;
 
 			// Emit an event.
@@ -121,23 +121,70 @@ pub mod pallet {
 			Ok(())
 		}
 
-		/// An example dispatchable that may throw a custom error.
-		#[pallet::weight(10_000 + T::DbWeight::get().reads_writes(1,1))]
-		pub fn cause_error(origin: OriginFor<T>) -> DispatchResult {
-			let _who = ensure_signed(origin)?;
 
-			// Read a value from storage.
-			match <Something<T>>::get() {
-				// Return an error if the value has not been set.
-				None => return Err(Error::<T>::NoneValue.into()),
-				Some(old) => {
-					// Increment the value read from storage; will error in the event of overflow.
-					let new = old.checked_add(1).ok_or(Error::<T>::StorageOverflow)?;
-					// Update the value in storage with the incremented result.
-					<Something<T>>::put(new);
-					Ok(())
-				},
+		#[pallet::weight(10_000)]
+		pub fn remove_from_awaitinglist(origin: OriginFor<T>, applicant: T::AccountId) -> DispatchResult {
+		ensure_root(origin)?;
+		let mut awaiting_list_members = <AwaitingOriginApproval<T>>::get();
+
+		<AwaitingOriginApproval<T>>::try_mutate(|awaiting_list| {
+		
+			if let Some(index) = awaiting_list.iter().position(|awaiting_list_members| awaiting_list_members.member_details == applicant) {
+				awaiting_list.remove(index);
+				return Ok(());
 			}
+			Err(())
+		})
+		.map_err(|_| <Error<T>>::NotOnAwaitingList)?;
+			Self::deposit_event(Event::AwaitingListMemberRemoved(applicant));
+			Ok(())
 		}
-	}
-}
+
+
+
+		#[pallet::weight(10000)]
+		pub fn add_to_rotaryclub(origin: OriginFor<T>, member: T::AccountId) -> DispatchResult {
+			ensure_root(origin)?;
+
+			ensure!(Self::get_awaiting_origin_approval.contains(&member) == true, <Error<T>>::NotOnAwaitingList);
+			let BlockNumber = <frame_system::Pallet<T>>::block_number();
+			let value = RotaryClubMembers { member_details: member.clone(), block_details: BlockNumber};
+			<InitialMembers<T>>::try_mutate(|awaiting_list| awaiting_list.try_push(value))
+			.map_err(|_| <Error<T>>::RotaryClubFull)?;
+
+			<AwaitingOriginApproval<T>>::try_mutate(|remove_from_awaitinglist_after_induction|{
+				if let Some(index) = remove_from_awaitinglist_after_induction.iter().position(|value| *value == member) {
+					remove_from_awaitinglist_after_induction.remove(index);
+					return Ok(());
+				}
+				Err(())
+			})
+			.map_err(|_| <Error<T>>::NotOnAwaitingList)?;
+
+			Self::deposit_event(Event::AwaitingListMemberRemoved(member.clone()));
+			Self::deposit_event(Event::RotaryClubMemberAdded(member.clone()));
+			Ok(())
+
+		}
+
+		#[pallet::weight(10000)]
+		pub fn remove_from_rotary_club(origin: OriginFor<T>, member: T::AccountId) -> DispatchResult {
+			ensure_root(origin)?;
+
+			<InitialMembers<T>>::try_mutate(|rotaryclub_members| {
+				if let Some(index) = rotaryclub_members.iter().position(|value| value.member_details == member) {
+					rotaryclub_members.remove(index);
+					return Ok(());
+				}
+				Err(())
+			})
+			.map_err(|_| <Error<T>>::NotRotaryClubMember)?;
+			Self::deposit_event(Event::RotaryClubMemberRemoved(member));
+			Ok(())
+
+		}
+
+
+		}
+	
+
