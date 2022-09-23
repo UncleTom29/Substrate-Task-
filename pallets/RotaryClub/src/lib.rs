@@ -86,9 +86,10 @@ pub mod pallet {
 		NotRotaryClubMember,
 
 	}
+// This trransaction can be signed by anyone interested in joining rotary club, except from the 'Root' origin account.
+// It will return an error if the applicant is already on the 'Awaiting list', or already a Rotary club member.
+// It will also return an error if the Awaiting list or Rotary club is filled up.
 
-	// Dispatchable functions allows users to interact with the pallet and invoke state changes.
-	// These functions materialize as "extrinsics", which are often compared to transactions.
 
 	#[pallet::call]
 	impl<T: Config> Pallet<T> {
@@ -121,6 +122,8 @@ pub mod pallet {
 			Ok(())
 		}
 
+		// This trransaction can be signed by applicants (people already on awaiting list) interested in leaving the awaiting list without entering the Rotary club.
+		// It will return an error if the signer is not on awaiting list. 
 
 		#[pallet::weight(10_000)]
 		pub fn remove_from_awaitinglist(origin: OriginFor<T>, applicant: T::AccountId) -> DispatchResult {
@@ -141,6 +144,10 @@ pub mod pallet {
 		}
 
 
+		// This function can only be executed by the 'Root' origin account.
+		// If any other account attempts to execute it, it will return a custom error.
+		// This function will add applicants to the rotary club, and also automatically remove them from awaiting list.
+		// It will also return an error if the rotary club is full.
 
 		#[pallet::weight(10000)]
 		pub fn add_to_rotaryclub(origin: OriginFor<T>, member: T::AccountId) -> DispatchResult {
@@ -166,6 +173,10 @@ pub mod pallet {
 			Ok(())
 
 		}
+		// This function can only be executed by the 'Root' origin account.
+		// If any other account attempts to execute it, it will return a custom error.
+		// This function will remove members from the rotary club.
+		// It will return an error if the account to be removed is not a member of the rotary club.
 
 		#[pallet::weight(10000)]
 		pub fn remove_from_rotary_club(origin: OriginFor<T>, member: T::AccountId) -> DispatchResult {
